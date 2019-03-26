@@ -52,8 +52,6 @@ func grade(num1 int, num2 int) float64 {
 
 //loop through the key values
 
-//store values
-
 //capture correct/incorrect answers
 
 //give the user the results
