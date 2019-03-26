@@ -2,44 +2,65 @@ package main
 
 import (
 	"encoding/csv"
+	"flag"
 	"fmt"
-	"log"
 	"math"
 	"os"
-	"strconv"
 )
 
 func main() {
-	var answer int
+	var userAnswer string
 	var correct int
 	var wrong int
 
-	file, err := os.Open("problems.csv")
+	fileName := flag.String("csv", "problems.csv", "Expected file should be a .csv file, the default is problem.csv")
+
+	csvFile, err := os.Open(*fileName)
 	if err != nil {
-		log.Fatal(err)
+		exit(fmt.Sprintf("Failed to open the provided file %s\n", *fileName))
 	}
-	defer file.Close()
 
-	fileContent := csv.NewReader(file)
+	fileContent := csv.NewReader(csvFile)
 
-	quiz, err := fileContent.ReadAll()
+	csvLines, err := fileContent.ReadAll()
+	if err != nil {
+		exit("Failed to parse the provided file")
+	}
+	problems := parseLines(csvLines)
 
-	for i := range quiz {
-		fmt.Printf("Problem #%v: %v = ", i+1, quiz[i][0])
-		_, err := fmt.Scanf("%d", &answer)
-		if err != nil {
-			log.Fatal(err)
-		}
-		if strconv.Itoa(answer) == quiz[i][1] {
-			fmt.Println("Correct")
+	for i, line := range problems {
+		fmt.Printf("Problem #%d: %s = ", i+1, line.question)
+		fmt.Scanf("%s\n", &userAnswer)
+		if userAnswer == line.answer {
 			correct++
 		} else {
-			fmt.Println("Wrong")
 			wrong++
 		}
 	}
-	fmt.Printf("You got %v out of %v.\n", strconv.Itoa(correct), strconv.Itoa(len(quiz)))
-	fmt.Printf("Your Grade: %v\n", grade(correct, len(quiz)))
+	fmt.Printf("You got %d out of %d correct!\n", correct, len(csvLines))
+	fmt.Printf("Your grade: %g\n", grade(correct, len(csvLines)))
+
+}
+
+func parseLines(lines [][]string) []problem {
+	ret := make([]problem, len(lines))
+	for i, line := range lines {
+		ret[i] = problem{
+			question: line[0],
+			answer:   line[1],
+		}
+	}
+	return ret
+}
+
+type problem struct {
+	question string
+	answer   string
+}
+
+func exit(msg string) {
+	fmt.Println(msg)
+	os.Exit(1)
 }
 
 func grade(num1 int, num2 int) float64 {
