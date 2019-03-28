@@ -11,11 +11,10 @@ import (
 )
 
 func main() {
-	var userAnswer string
 	var correct int
 	var wrong int
 
-	customTimer := flag.Int("userTime", 30, "Expected an Int for time in seconds")
+	customTimer := flag.Int("timer", 30, "Expected an Int for time in seconds")
 	fileName := flag.String("csv", "problems.csv", "Expected file should be a .csv file, the default is problem.csv")
 	flag.Parse()
 
@@ -33,23 +32,28 @@ func main() {
 	problems := parseLines(csvLines)
 
 	examStart(*customTimer)
-
-	now := time.Now()
-	after := now.Add(time.Duration(*customTimer) * time.Second)
-
+	timer := time.NewTimer(time.Duration(*customTimer) * time.Second)
+problemLoop:
 	for i, line := range problems {
-		now = time.Now()
-
 		fmt.Printf("Problem #%d: %s = ", i+1, line.question)
-		fmt.Scanf("%s\n", &userAnswer)
+		answerCh := make(chan string)
 
-		if formatAnswer(userAnswer) == line.answer {
-			correct++
-		} else {
-			wrong++
-		}
-		if now.After(after) {
-			break
+		go func() {
+			var userAnswer string
+			fmt.Scanf("%s\n", &userAnswer)
+			answerCh <- userAnswer
+		}()
+
+		select {
+		case <-timer.C:
+			fmt.Println()
+			break problemLoop
+		case answer := <-answerCh:
+			if formatAnswer(answer) == line.answer {
+				correct++
+			} else {
+				wrong++
+			}
 		}
 	}
 
