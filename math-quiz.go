@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"strings"
+	"time"
 )
 
 func main() {
@@ -13,7 +15,9 @@ func main() {
 	var correct int
 	var wrong int
 
+	customTimer := flag.Int("userTime", 30, "Expected an Int for time in seconds")
 	fileName := flag.String("csv", "problems.csv", "Expected file should be a .csv file, the default is problem.csv")
+	flag.Parse()
 
 	csvFile, err := os.Open(*fileName)
 	if err != nil {
@@ -28,18 +32,35 @@ func main() {
 	}
 	problems := parseLines(csvLines)
 
+	examStart(*customTimer)
+
+	now := time.Now()
+	after := now.Add(time.Duration(*customTimer) * time.Second)
+
 	for i, line := range problems {
+		now = time.Now()
+
 		fmt.Printf("Problem #%d: %s = ", i+1, line.question)
 		fmt.Scanf("%s\n", &userAnswer)
-		if userAnswer == line.answer {
+
+		if formatAnswer(userAnswer) == line.answer {
 			correct++
 		} else {
 			wrong++
 		}
+		if now.After(after) {
+			break
+		}
 	}
+
 	fmt.Printf("You got %d out of %d correct!\n", correct, len(csvLines))
 	fmt.Printf("Your grade: %g\n", grade(correct, len(csvLines)))
 
+}
+
+func examStart(time int) {
+	fmt.Printf("You will have %v seconds to take this exam.\nPress Enter to begin math test.", time)
+	fmt.Scanln()
 }
 
 func parseLines(lines [][]string) []problem {
@@ -51,6 +72,10 @@ func parseLines(lines [][]string) []problem {
 		}
 	}
 	return ret
+}
+
+func formatAnswer(answer string) string {
+	return strings.TrimSpace(strings.ToLower(answer))
 }
 
 type problem struct {
